@@ -33,9 +33,10 @@ let savedInfo = "confirmed",
     savedBtn,
     savedDataBtn,
     savedOrigin = "Asia",
-    loading=document.querySelector("#load");
-    
-const createHtmlBtns = () => {
+    loading = document.querySelector("#load"),
+    originBeforeLoading;
+
+const createHtmlBtns = () => {//create all btns on page and add event listeners
     for (const i of origins) {
         createBtn(i, originBtnContainer, updateOriginChartPress, i === "Asia")
     }
@@ -45,7 +46,7 @@ const createHtmlBtns = () => {
     singleCountry.addEventListener("change", singleCountryData)
 }
 
-const createBtn = (val, appendTo, onClick, flag) => {
+const createBtn = (val, appendTo, onClick, flag) => {//create single btn recevies value father ,callback on click, flag to know if its the default pick
     const btn = document.createElement("input")
     btn.type = "submit"
     btn.value = val;
@@ -63,7 +64,7 @@ const createBtn = (val, appendTo, onClick, flag) => {
     }
 }
 
-function singleCountryData() {
+function singleCountryData() {//show all info about a single country
     statics.innerHTML = ""
     let obj = {
         "Total cases": worldCountrys[this.value].latest_data.confirmed,
@@ -106,32 +107,41 @@ async function fetchData(originName) {//gets origing name and insert the data to
                 })
         return temp
     }, [])
-    loading.remove()
+    if (originBeforeLoading === originName) {
+        loading.remove()
+        updateChart(originName)
+        const a = [...originBtnContainer.children].map(val => {
+            if (val.value === originName) {
+                savedBtn.style.background = "rgba(102, 77, 77, 0.555)";
+                savedBtn = val;
+                val.style.background = "rgba(153, 45, 45, 0.555)";
+            }
+        })
+    }
 }
-async function updateOriginChartPress() {
-    
-    if(await updateChart(this.value)){
+async function updateOriginChartPress() {//change btn style save new btn and update chart
+    if (await updateChart(this.value)) {
+        loading.remove()
         statics.innerHTML = ""
         savedBtn.style.background = "rgba(102, 77, 77, 0.555)";
         savedBtn = this;
         this.style.background = "rgba(153, 45, 45, 0.555)";
     }
-    
+
 }
-async function updateDataChartPress() {
+async function updateDataChartPress() {//change btn style save new btn and update chart
     savedInfo = this.value
     await updateChart(savedOrigin)
     savedDataBtn.style.background = "rgba(92, 6, 6, 0.555)"
     savedDataBtn = this;
     this.style.background = "rgba(233, 8, 8, 0.555)"
 }
-
 async function updateChart(originName) {//get origin name and change it to the saved data required (confirmed/critical...)
     const xs = [],
         ys = [];
-    if(originsCountrys[originName]){
+    if (originsCountrys[originName]) {
         await new Promise(async (res, rej) => {
-            singleCountry.innerHTML=""
+            singleCountry.innerHTML = ""
             for (const i of originsCountrys[originName]) {
                 xs.push(i.name)
                 ys.push(await (stringToVar(i)))
@@ -146,32 +156,30 @@ async function updateChart(originName) {//get origin name and change it to the s
         savedOrigin = originName
         return true
     }
-    else{
+    else {
+        myChart.data.labels = []
+        myChart.update()
         document.body.append(loading)
+        originBeforeLoading = originName
     }
 }
-async function createOption(countryName) {
-    console.log(countryName);
+async function createOption(countryName) {//create all country options for origin
     const option = document.createElement("option")
     option.value = countryName
     option.innerText = countryName
     singleCountry.append(option)
-    console.log(singleCountry);
 }
-async function firstRun() {
+async function firstRun() {//run project
     const currentOrigin = origins[0]
     await fetchData(currentOrigin)
     await updateChart(currentOrigin)
-    removeLoad()
+    loading.remove()
     createHtmlBtns()
     origins.splice(0, 1)
     while (origins.length > 0) {
         await fetchData(origins[0])
         origins.splice(0, 1)
     }
-}
-function removeLoad(){
-    loading.remove()
 }
 async function stringToVar(i) {//convert and return the right required data on country
     return savedInfo === dataOptions[0] ? i.latest_data.confirmed : savedInfo === dataOptions[1] ? i.latest_data.critical : savedInfo === dataOptions[2] ? i.latest_data.deaths : i.latest_data.recovered
