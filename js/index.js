@@ -32,8 +32,9 @@ const origins = ["Asia", "Europe", "Africa", "Americas", "Oceania"],
 let savedInfo = "confirmed",
     savedBtn,
     savedDataBtn,
-    savedOrigin = "Asia";
-
+    savedOrigin = "Asia",
+    loading=document.querySelector("#load");
+    
 const createHtmlBtns = () => {
     for (const i of origins) {
         createBtn(i, originBtnContainer, updateOriginChartPress, i === "Asia")
@@ -105,45 +106,57 @@ async function fetchData(originName) {//gets origing name and insert the data to
                 })
         return temp
     }, [])
+    loading.remove()
 }
 async function updateOriginChartPress() {
-    updateChart(this.value)
-    statics.innerHTML = ""
-    savedBtn.style.background = "rgba(102, 77, 77, 0.555)";
-    savedBtn = this;
-    this.style.background = "rgba(153, 45, 45, 0.555)";
-    singleCountry.innerHTML = ""
+    
+    if(await updateChart(this.value)){
+        statics.innerHTML = ""
+        savedBtn.style.background = "rgba(102, 77, 77, 0.555)";
+        savedBtn = this;
+        this.style.background = "rgba(153, 45, 45, 0.555)";
+    }
+    
 }
 async function updateDataChartPress() {
     savedInfo = this.value
-    updateChart(savedOrigin)
+    await updateChart(savedOrigin)
     savedDataBtn.style.background = "rgba(92, 6, 6, 0.555)"
     savedDataBtn = this;
     this.style.background = "rgba(233, 8, 8, 0.555)"
 }
 
-async function updateChart(originName, flag = true) {//get origin name and change it to the saved data required (confirmed/critical...)
+async function updateChart(originName) {//get origin name and change it to the saved data required (confirmed/critical...)
     const xs = [],
         ys = [];
-    await new Promise(async (res, rej) => {
-        for (const i of originsCountrys[originName]) {
-            xs.push(i.name)
-            ys.push(await (stringToVar(i)))
-            await createOption(i.name)
-        }
-        res()
-    })
-    myChart.data.datasets[0].data = ys
-    myChart.data.datasets[0].label = savedInfo
-    myChart.data.labels = xs
-    myChart.update();
-    savedOrigin = originName
+    if(originsCountrys[originName]){
+        await new Promise(async (res, rej) => {
+            singleCountry.innerHTML=""
+            for (const i of originsCountrys[originName]) {
+                xs.push(i.name)
+                ys.push(await (stringToVar(i)))
+                await createOption(i.name)
+            }
+            res()
+        })
+        myChart.data.datasets[0].data = ys
+        myChart.data.datasets[0].label = savedInfo
+        myChart.data.labels = xs
+        myChart.update();
+        savedOrigin = originName
+        return true
+    }
+    else{
+        document.body.append(loading)
+    }
 }
 async function createOption(countryName) {
+    console.log(countryName);
     const option = document.createElement("option")
     option.value = countryName
     option.innerText = countryName
     singleCountry.append(option)
+    console.log(singleCountry);
 }
 async function firstRun() {
     const currentOrigin = origins[0]
@@ -158,7 +171,7 @@ async function firstRun() {
     }
 }
 function removeLoad(){
-    document.querySelector("#load").remove()
+    loading.remove()
 }
 async function stringToVar(i) {//convert and return the right required data on country
     return savedInfo === dataOptions[0] ? i.latest_data.confirmed : savedInfo === dataOptions[1] ? i.latest_data.critical : savedInfo === dataOptions[2] ? i.latest_data.deaths : i.latest_data.recovered

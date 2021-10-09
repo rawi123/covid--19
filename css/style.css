@@ -1,4 +1,6 @@
-  
+body{
+    overflow-x: hidden;
+}
   #load {
     position:absolute;
     width:600px;
@@ -17,7 +19,7 @@
   #load div {
     position:absolute;
     width:20px;
-    height:36px;
+    /* height:2px; */
     opacity:0;
     font-family:Helvetica, Arial, sans-serif;
     animation:move 2s linear infinite;
@@ -228,6 +230,10 @@
 @media (max-width:1000px) {
     .country{
         width: 30vw;
+    }
+    #load{
+        width:300px;
+        margin-left:-200px;
     }
 }
 .statics{
